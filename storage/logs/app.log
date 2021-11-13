@@ -1,0 +1,1 @@
+2021/11/13 18:24:37 {"callers":["D:/goland/go/src/blog/main.go:25 main.init.0"],"level":"info","message":"svc.UploadFile err: file suffix is not supported","time":1636799077474913800}
