@@ -13,12 +13,13 @@ import (
 	"net/http"
 	"time"
 )
-func init(){
-	err:=setupSetting()
-	if err!=nil{
-		log.Fatalf("init.setupSetting err : %v",err)
+
+func init() {
+	err := setupSetting()
+	if err != nil {
+		log.Fatalf("init.setupSetting err : %v", err)
 	}
-	err=setupDBEngine()
+	err = setupDBEngine()
 	if err != nil {
 		log.Fatalf("init.setupDBEngine err: %v", err)
 	}
@@ -27,19 +28,20 @@ func init(){
 		log.Fatalf("init.setupLogger err: %v", err)
 	}
 }
+
 // @title 博客系统
 // @version 1.0
 // @description Go 语言编程之旅：一起用 Go 做项目
 // @termsOfService https://github.com/go-programming-tour-book
-func main(){
+func main() {
 	gin.SetMode(global.ServerSetting.RunMode) //根据输入字符串设置 gin 模式
 	router := routers.NewRouter()
 	s := &http.Server{
-		Addr:":"+global.ServerSetting.HttpPort,
+		Addr:           ":" + global.ServerSetting.HttpPort,
 		Handler:        router,
-		ReadTimeout: global.ServerSetting.ReadTimeout,
-		WriteTimeout: global.ServerSetting.WriteTimeout,
-		MaxHeaderBytes:1<<20,
+		ReadTimeout:    global.ServerSetting.ReadTimeout,
+		WriteTimeout:   global.ServerSetting.WriteTimeout,
+		MaxHeaderBytes: 1 << 20,
 	}
 	s.ListenAndServe()
 }
@@ -60,6 +62,11 @@ func setupSetting() error {
 	if err != nil {
 		return err
 	}
+	err = setting.ReadSection("JWT", &global.JWTSetting)
+	if err != nil {
+		return err
+	}
+	global.JWTSetting.Expire *= time.Second
 	global.ServerSetting.ReadTimeout *= time.Second
 	global.ServerSetting.WriteTimeout *= time.Second
 	return nil
@@ -67,16 +74,16 @@ func setupSetting() error {
 
 func setupLogger() error {
 	global.Logger = logger.NewLogger(&lumberjack.Logger{
-		Filename: global.AppSetting.LogSavePath + "/" + global.AppSetting.LogFileName + global.AppSetting.LogFileExt,
+		Filename:  global.AppSetting.LogSavePath + "/" + global.AppSetting.LogFileName + global.AppSetting.LogFileExt,
 		MaxSize:   600,
 		MaxAge:    10,
 		LocalTime: true,
 	}, "", log.LstdFlags).WithCaller(2)
 	return nil
 }
-func setupDBEngine()error{
+func setupDBEngine() error {
 	var err error
-	global.DBEngine,err=model.NewDBEngine(global.DatabaseSetting)
+	global.DBEngine, err = model.NewDBEngine(global.DatabaseSetting)
 	if err != nil {
 		return err
 	}

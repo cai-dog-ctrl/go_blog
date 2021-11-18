@@ -6,8 +6,9 @@ import (
 )
 
 var (
-	ServerSetting   =new(setting.SeverSettingS)
-	AppSetting =new(setting.AppSettingS)
-	DatabaseSetting =new(setting.DatabaseSettingS)
-	Logger          =new(logger.Logger)
+	ServerSetting   = new(setting.SeverSettingS)
+	AppSetting      = new(setting.AppSettingS)
+	DatabaseSetting = new(setting.DatabaseSettingS)
+	Logger          = new(logger.Logger)
+	JWTSetting      = new(setting.JWTSetting)
 )
