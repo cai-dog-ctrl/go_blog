@@ -11,4 +11,5 @@ var (
 	DatabaseSetting = new(setting.DatabaseSettingS)
 	Logger          = new(logger.Logger)
 	JWTSetting      = new(setting.JWTSetting)
+	EmailSetting    = new(setting.EmailSettingS)
 )

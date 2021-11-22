@@ -5,17 +5,36 @@ import (
 	"blog/internal/middleware"
 	"blog/internal/routers/api"
 	v1 "blog/internal/routers/api/v1"
+	"blog/pkg/limiter"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"net/http"
+	"time"
 )
 
+var methodLimiters = limiter.NewMethodLimiter().AddBuckets(limiter.LimiterBucketRule{
+	Key:          "/auth",
+	FillInterval: time.Second,
+	Capacity:     10,
+	Quantum:      10,
+})
+
 func NewRouter() *gin.Engine {
-	r := gin.Default()
+	r := gin.New()
+	if global.ServerSetting.RunMode == "debug" {
+		r.Use(gin.Logger())
+		r.Use(gin.Recovery())
+	} else {
+		r.Use(middleware.AccessLog())
+		r.Use(middleware.Recovery())
+	}
+	r.Use(middleware.RateLimiter(methodLimiters))
+	r.Use(middleware.ContextTimeout(60 * time.Second))
+	r.Use(middleware.Translations()) //注册Translation中间件
 	r.Use(gin.Logger())              //Logger 实例一个 Logger 中间件，它将日志写入gin
 	r.Use(gin.Recovery())            //Recovery 返回一个中间件，它可以从任何恐慌中恢复，如果有，则写入 500
-	r.Use(middleware.Translations()) //注册Translation中间件
+
 	url := ginSwagger.URL("http://127.0.0.1:8000/swagger/doc.json")
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, url)) //注册一个swagger路由访问
 	article := v1.NewArticle()

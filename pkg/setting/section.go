@@ -42,6 +42,15 @@ type JWTSetting struct {
 	Issuer string
 	Expire time.Duration //存在时间
 }
+type EmailSettingS struct {
+	Host     string
+	Port     int
+	UserName string
+	Password string
+	IsSSL    bool
+	From     string
+	To       []string
+}
 
 // ReadSection 获取一个键并将其解组为一个结构体
 func (s *Setting) ReadSection(k string, v interface{}) error {
