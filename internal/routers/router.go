@@ -34,7 +34,7 @@ func NewRouter() *gin.Engine {
 	r.Use(middleware.Translations()) //注册Translation中间件
 	r.Use(gin.Logger())              //Logger 实例一个 Logger 中间件，它将日志写入gin
 	r.Use(gin.Recovery())            //Recovery 返回一个中间件，它可以从任何恐慌中恢复，如果有，则写入 500
-
+	r.Use(middleware.Tracer())       //链路追踪
 	url := ginSwagger.URL("http://127.0.0.1:8000/swagger/doc.json")
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, url)) //注册一个swagger路由访问
 	article := v1.NewArticle()

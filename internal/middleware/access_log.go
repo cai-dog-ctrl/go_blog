@@ -21,10 +21,11 @@ func (w AccessLogWriter) Write(p []byte) (int, error) {
 	return w.ResponseWriter.Write(p)
 }
 
+// AccessLog 访问日志的中间件
 func AccessLog() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		bodyWriter := &AccessLogWriter{body: bytes.NewBufferString(""), ResponseWriter: c.Writer}
-		c.Writer = bodyWriter
+		c.Writer = bodyWriter //这里是不是递归定义了？？
 		beginTime := time.Now().Unix()
 		c.Next()
 		endTime := time.Now().Unix()
@@ -32,7 +33,9 @@ func AccessLog() gin.HandlerFunc {
 			"request":  c.Request.PostForm.Encode(),
 			"response": bodyWriter.body.String(),
 		}
-		global.Logger.WithFields(fields).Infof("access log: method: %s, status_code: %d, begin_time: %d, end_time: %d",
+		s := "access log: method: %s, status_code: %d, " +
+			"begin_time: %d, end_time: %d"
+		global.Logger.WithFields(fields).Infof(s,
 			c.Request.Method,
 			bodyWriter.Status(),
 			beginTime,

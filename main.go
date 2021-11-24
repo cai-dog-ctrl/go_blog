@@ -7,11 +7,20 @@ import (
 	"blog/internal/routers"
 	"blog/pkg/logger"
 	"blog/pkg/setting"
+	"blog/pkg/tracer"
+	"flag"
 	"github.com/gin-gonic/gin"
 	"gopkg.in/natefinch/lumberjack.v2"
 	"log"
 	"net/http"
+	"strings"
 	"time"
+)
+
+var (
+	port    string
+	runMode string
+	config  string
 )
 
 func init() {
@@ -27,6 +36,11 @@ func init() {
 	if err != nil {
 		log.Fatalf("init.setupLogger err: %v", err)
 	}
+	err = setupTracer()
+	if err != nil {
+		log.Fatalf("init.setupTracer err: %v", err)
+	}
+	setupFlag()
 }
 
 // @title 博客系统
@@ -46,33 +60,41 @@ func main() {
 	s.ListenAndServe()
 }
 func setupSetting() error {
-	setting, err := setting.NewSetting()
+	s, err := setting.NewSetting(strings.Split(config, ",")...)
 	if err != nil {
 		return err
 	}
-	err = setting.ReadSection("Server", &global.ServerSetting)
+	err = s.ReadSection("Server", &global.ServerSetting)
 	if err != nil {
 		return err
 	}
-	err = setting.ReadSection("App", &global.AppSetting)
+	err = s.ReadSection("App", &global.AppSetting)
 	if err != nil {
 		return err
 	}
-	err = setting.ReadSection("Database", &global.DatabaseSetting)
+	err = s.ReadSection("Database", &global.DatabaseSetting)
 	if err != nil {
 		return err
 	}
-	err = setting.ReadSection("JWT", &global.JWTSetting)
+	err = s.ReadSection("JWT", &global.JWTSetting)
 	if err != nil {
 		return err
 	}
-	err = setting.ReadSection("Email", &global.EmailSetting)
+	err = s.ReadSection("Email", &global.EmailSetting)
 	if err != nil {
 		return err
 	}
+
 	global.JWTSetting.Expire *= time.Second
 	global.ServerSetting.ReadTimeout *= time.Second
 	global.ServerSetting.WriteTimeout *= time.Second
+	if port != "" {
+		global.ServerSetting.HttpPort = port
+	}
+	if runMode != "" {
+		global.ServerSetting.RunMode = runMode
+	}
+
 	return nil
 }
 
@@ -91,5 +113,25 @@ func setupDBEngine() error {
 	if err != nil {
 		return err
 	}
+	return nil
+}
+func setupTracer() error {
+	jaegerTracer, _, err := tracer.NewJaegerTracer(
+		"blog-service",
+		"127.0.0.1:6831",
+	)
+	if err != nil {
+		return err
+	}
+	global.Tracer = jaegerTracer
+	return nil
+}
+func setupFlag() error {
+	flag.StringVar(&port, "port", "", "启动端口")
+	flag.StringVar(&runMode, "mode", "", "启动模式")
+	flag.StringVar(&config, "config", "configs/", "指定要使用的配置文件路径")
+
+	flag.Parse()
+
 	return nil
 }

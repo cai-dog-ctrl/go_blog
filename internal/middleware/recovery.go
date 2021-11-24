@@ -24,6 +24,7 @@ func Recovery() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		defer func() {
 			if err := recover(); err != nil {
+				//当recover捕获了panic，
 				global.Logger.WithCallersFrames().Infof("panic recover err: %v", err)
 
 				err := defailtMailer.SendMail(
