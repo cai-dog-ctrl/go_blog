@@ -8,19 +8,28 @@ import (
 	"blog/pkg/logger"
 	"blog/pkg/setting"
 	"blog/pkg/tracer"
+	"context"
 	"flag"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"gopkg.in/natefinch/lumberjack.v2"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 )
 
 var (
-	port    string
-	runMode string
-	config  string
+	port         string
+	runMode      string
+	config       string
+	isVersion    bool
+	buildTime    string
+	buildVersion string
+	gitCommitID  string
 )
 
 func init() {
@@ -48,6 +57,12 @@ func init() {
 // @description Go 语言编程之旅：一起用 Go 做项目
 // @termsOfService https://github.com/go-programming-tour-book
 func main() {
+	if isVersion {
+		fmt.Printf("build_time: %s\n", buildTime)
+		fmt.Printf("build_version: %s\n", buildVersion)
+		fmt.Printf("git_commit_id : %s\n", gitCommitID)
+		return
+	}
 	gin.SetMode(global.ServerSetting.RunMode) //根据输入字符串设置 gin 模式
 	router := routers.NewRouter()
 	s := &http.Server{
@@ -57,7 +72,24 @@ func main() {
 		WriteTimeout:   global.ServerSetting.WriteTimeout,
 		MaxHeaderBytes: 1 << 20,
 	}
-	s.ListenAndServe()
+	go func() {
+		err := s.ListenAndServe()
+		if err != nil && err != http.ErrServerClosed {
+			log.Fatalf("s.ListenAndServe err: %s \n", err)
+		}
+	}()
+	quit := make(chan os.Signal)
+
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	log.Println("shutting down server...")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := s.Shutdown(ctx); err != nil {
+		log.Fatal("Server forced to shutdown:", err)
+	}
+
+	log.Println("Server exiting")
 }
 func setupSetting() error {
 	s, err := setting.NewSetting(strings.Split(config, ",")...)
@@ -130,7 +162,7 @@ func setupFlag() error {
 	flag.StringVar(&port, "port", "", "启动端口")
 	flag.StringVar(&runMode, "mode", "", "启动模式")
 	flag.StringVar(&config, "config", "configs/", "指定要使用的配置文件路径")
-
+	flag.BoolVar(&isVersion, "version", false, "编译信息")
 	flag.Parse()
 
 	return nil
